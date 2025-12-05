@@ -68,7 +68,6 @@ word_similarity/
 pretrain/
 results/
 eval/
-data/
 
 original_paper_error_analysis.py
 create_summary_report.py
