@@ -74,3 +74,5 @@ original_paper_error_analysis.py
 create_summary_report.py
 error_analysis.py
 analogy_test.ipynb
+
+__pycache__/
