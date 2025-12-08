@@ -17,12 +17,13 @@ class ELMoIterableDataset(IterableDataset):
     ELMo 학습을 위한 Iterable Dataset
     Forward와 Backward 언어 모델 학습을 위한 시퀀스 생성 
     """
-    def __init__(self, file_path, word2idx, seq_len=20):
+    def __init__(self, file_path, word2idx, seq_len=20, vocab_size=None):
         super().__init__()
         self.file_path = file_path
         self.word2idx = word2idx
         self.seq_len = seq_len
-        self.vocab_size = len(word2idx)
+        # vocab_size가 명시적으로 제공되면 사용, 아니면 word2idx 길이 사용
+        self.vocab_size = vocab_size if vocab_size is not None else len(word2idx)
         self.idx2word = {i: w for w, i in word2idx.items()}
         
         if not os.path.exists(self.file_path):
@@ -150,7 +151,8 @@ def get_dataloader(file_path, config, word2idx):
     dataset = ELMoIterableDataset(
         file_path=file_path,
         word2idx=word2idx,
-        seq_len=config.get("seq_len", 20)
+        seq_len=config.get("seq_len", 20),
+        vocab_size=config.get("vocab_size", None)
     )
     
     # num_workers 설정: 설정 파일의 값을 사용 (기본값은 원래대로 유지)

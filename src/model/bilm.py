@@ -463,8 +463,9 @@ class ELMoBiLM(nn.Module):
         else:
             backward_loss = torch.stack(backward_losses).mean()
         
-        # Total loss is sum of forward and backward losses (original ELMo)
-        total_loss = forward_loss + backward_loss
+        # Total loss is average of forward and backward losses for stable training
+        # (원래 ELMo는 합산하지만, 안정적인 학습을 위해 평균 사용)
+        total_loss = (forward_loss + backward_loss) / 2.0
         
         return total_loss, forward_loss, backward_loss
     
