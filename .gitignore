@@ -65,6 +65,7 @@ Desktop.ini
 *.pth
 *.pt
 *.h
+*.log
 
 word_similarity/
 pretrain/
