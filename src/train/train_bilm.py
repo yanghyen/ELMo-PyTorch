@@ -67,8 +67,9 @@ def set_seed(seed):
     torch.cuda.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
     np.random.seed(seed)
-    torch.backends.cudnn.deterministic = True
-    torch.backends.cudnn.benchmark = False
+    # 학습 속도 향상을 위해 benchmark 활성화 (재현성은 약간 떨어질 수 있음)
+    torch.backends.cudnn.deterministic = False
+    torch.backends.cudnn.benchmark = True
 
 
 def load_config(config_path):
@@ -93,7 +94,7 @@ def load_vocabulary(vocab_path):
         # 기존 형식 (직접 word2idx가 저장된 경우)
         word2idx = vocab_data
     
-    logger.info(f"Loaded vocabulary: {len(word2idx):,} words")
+    # logger.info(f"Loaded vocabulary: {len(word2idx):,} words")  # 불필요한 로그 제거
     return word2idx
 
 
@@ -109,13 +110,13 @@ def save_checkpoint(model, optimizer, epoch, loss, checkpoint_path, metrics=None
         'timestamp': datetime.now().isoformat(),
     }
     torch.save(checkpoint, checkpoint_path)
-    logger.info(f"Checkpoint saved: {checkpoint_path}")
+    # logger.info(f"Checkpoint saved: {checkpoint_path}")  # 체크포인트 저장은 자동이므로 로그 제거
 
 
 def load_checkpoint(model, optimizer, checkpoint_path):
     """체크포인트 로드"""
     if not os.path.exists(checkpoint_path):
-        logger.info("No checkpoint found, starting from scratch")
+        # logger.info("No checkpoint found, starting from scratch")  # 불필요한 로그 제거
         return 0, float('inf')
     
     checkpoint = torch.load(checkpoint_path, map_location='cpu')
@@ -124,16 +125,18 @@ def load_checkpoint(model, optimizer, checkpoint_path):
     epoch = checkpoint['epoch']
     loss = checkpoint['loss']
     
-    logger.info(f"Checkpoint loaded: epoch {epoch}, loss {loss:.4f}")
+    logger.info(f"Resumed from epoch {epoch}, loss {loss:.4f}")
     return epoch, loss
 
 
 class MetricsTracker:
     """학습 메트릭 추적 및 분석"""
     
-    def __init__(self, log_dir="logs", results_dir="runs/metrics"):
+    def __init__(self, log_dir="logs", results_dir="runs/metrics", depth=None, seed=None):
         self.log_dir = log_dir
         self.results_dir = results_dir
+        self.depth = depth
+        self.seed = seed
         os.makedirs(log_dir, exist_ok=True)
         os.makedirs(results_dir, exist_ok=True)
         
@@ -141,10 +144,10 @@ class MetricsTracker:
         self.efficiency_metrics = defaultdict(list)
         self.error_analysis = defaultdict(list)
         
-        # CSV 저장을 위한 데이터프레임
-        self.metrics_df = pd.DataFrame()
-        self.efficiency_df = pd.DataFrame()
-        self.error_df = pd.DataFrame()
+        # CSV 저장을 위한 리스트 (성능 최적화: concat 대신 리스트 사용)
+        self.metrics_list = []
+        self.efficiency_list = []
+        self.error_list = []
         
         # GPU 정보 초기화
         self.gpu_available = torch.cuda.is_available()
@@ -198,7 +201,7 @@ class MetricsTracker:
         self.efficiency_metrics['batch_size'].append(batch_size)
         self.efficiency_metrics['seq_len'].append(seq_len)
         
-        # CSV용 데이터 준비
+        # CSV용 데이터 준비 (리스트에 추가 - 성능 최적화)
         efficiency_row = {
             'batch_idx': batch_idx or len(self.efficiency_metrics['throughput']) - 1,
             'timestamp': datetime.now().isoformat(),
@@ -210,11 +213,8 @@ class MetricsTracker:
             'memory_used': memory_used
         }
         
-        # DataFrame에 추가
-        new_row = pd.DataFrame([efficiency_row])
-        self.efficiency_df = pd.concat([self.efficiency_df, new_row], ignore_index=True)
-        
-        # Efficiency CSV는 최종에만 저장 (배치마다 저장하지 않음)
+        # 리스트에 추가 (concat 대신 - 성능 향상)
+        self.efficiency_list.append(efficiency_row)
     
     def analyze_errors(self, logits, targets, vocab, mask=None, sample_size=20):
         """에러 분석 - 언어학적 현상별 분류"""
@@ -253,7 +253,7 @@ class MetricsTracker:
         
         self.error_analysis['samples'].extend(error_samples)
         
-        # CSV용 에러 데이터 준비
+        # CSV용 에러 데이터 준비 (리스트에 추가 - 성능 최적화)
         for error in error_samples:
             error_row = {
                 'timestamp': datetime.now().isoformat(),
@@ -264,8 +264,7 @@ class MetricsTracker:
                 'position': error['position'],
                 'category': error['category']
             }
-            new_row = pd.DataFrame([error_row])
-            self.error_df = pd.concat([self.error_df, new_row], ignore_index=True)
+            self.error_list.append(error_row)
         
         return error_samples
     
@@ -293,20 +292,15 @@ class MetricsTracker:
         for key, value in metrics_dict.items():
             self.metrics[key].append(value)
         
-        # JSON으로 저장 (상세 로그용)
-        metrics_file = os.path.join(self.log_dir, f'metrics_epoch_{epoch}.json')
-        with open(metrics_file, 'w') as f:
-            json.dump(metrics_dict, f, indent=2)
+        # JSON 저장은 최종에만 수행 (성능 최적화)
+        # metrics_file = os.path.join(self.log_dir, f'metrics_epoch_{epoch}.json')
+        # with open(metrics_file, 'w') as f:
+        #     json.dump(metrics_dict, f, indent=2)
         
-        # CSV용 데이터 준비
+        # CSV용 데이터 준비 (리스트에 추가 - 성능 최적화)
         csv_row = {'epoch': epoch, 'timestamp': datetime.now().isoformat()}
         csv_row.update(metrics_dict)
-        
-        # DataFrame에 추가
-        new_row = pd.DataFrame([csv_row])
-        self.metrics_df = pd.concat([self.metrics_df, new_row], ignore_index=True)
-        
-        # CSV는 최종에만 저장 (매 에포크마다 저장하지 않음)
+        self.metrics_list.append(csv_row)
     
     def save_efficiency_report(self):
         """효율성 리포트 저장 (JSON + CSV)"""
@@ -326,13 +320,19 @@ class MetricsTracker:
             'total_batches': len(self.efficiency_metrics['batch_size'])
         }
         
-        report_file = os.path.join(self.log_dir, 'efficiency_report.json')
+        # 파일명에 depth와 seed 포함
+        suffix = self._get_file_suffix()
+        report_file = os.path.join(self.log_dir, f'efficiency_report{suffix}.json')
         with open(report_file, 'w') as f:
             json.dump(report, f, indent=2)
         
-        # CSV 최종 저장
-        csv_file = os.path.join(self.results_dir, 'efficiency_metrics.csv')
-        self.efficiency_df.to_csv(csv_file, index=False)
+        # CSV 최종 저장 (리스트를 DataFrame으로 변환)
+        csv_file = os.path.join(self.results_dir, f'efficiency_metrics{suffix}.csv')
+        if self.efficiency_list:
+            self.efficiency_df = pd.DataFrame(self.efficiency_list)
+            self.efficiency_df.to_csv(csv_file, index=False)
+        else:
+            self.efficiency_df = pd.DataFrame()
         
         # 요약 통계 CSV
         summary_stats = {
@@ -343,12 +343,13 @@ class MetricsTracker:
             'total_batches': [report['total_batches']] * 3
         }
         summary_df = pd.DataFrame(summary_stats)
-        summary_csv = os.path.join(self.results_dir, 'efficiency_summary.csv')
+        summary_csv = os.path.join(self.results_dir, f'efficiency_summary{suffix}.csv')
         summary_df.to_csv(summary_csv, index=False)
         
-        logger.info(f"Efficiency report saved: {report_file}")
-        logger.info(f"Efficiency CSV saved: {csv_file}")
-        logger.info(f"Efficiency summary saved: {summary_csv}")
+        # 파일 저장 로그 제거 (성능 최적화)
+        # logger.info(f"Efficiency report saved: {report_file}")
+        # logger.info(f"Efficiency CSV saved: {csv_file}")
+        # logger.info(f"Efficiency summary saved: {summary_csv}")
     
     def save_error_analysis(self):
         """에러 분석 결과 저장 (JSON + CSV)"""
@@ -365,28 +366,34 @@ class MetricsTracker:
             'error_samples': self.error_analysis['samples'][:50],  # 상위 50개만 저장
         }
         
-        analysis_file = os.path.join(self.log_dir, 'error_analysis.json')
+        # 파일명에 depth와 seed 포함
+        suffix = self._get_file_suffix()
+        analysis_file = os.path.join(self.log_dir, f'error_analysis{suffix}.json')
         with open(analysis_file, 'w') as f:
             json.dump(analysis, f, indent=2, ensure_ascii=False)
         
-        # CSV 저장 (전체 에러 데이터)
-        if not self.error_df.empty:
-            csv_file = os.path.join(self.results_dir, 'error_analysis.csv')
+        # CSV 저장 (전체 에러 데이터) - 리스트를 DataFrame으로 변환
+        if self.error_list:
+            self.error_df = pd.DataFrame(self.error_list)
+            csv_file = os.path.join(self.results_dir, f'error_analysis{suffix}.csv')
             self.error_df.to_csv(csv_file, index=False)
-            
-            # 카테고리별 통계 CSV
+        else:
+            self.error_df = pd.DataFrame()
+        
+        # 카테고리별 통계 CSV (에러가 있는 경우에만)
+        if self.error_analysis['samples']:
             category_stats = pd.DataFrame([
                 {'category': cat, 'count': count, 'percentage': count/len(self.error_analysis['samples'])*100}
                 for cat, count in categories.items()
             ])
-            category_csv = os.path.join(self.results_dir, 'error_categories.csv')
+            category_csv = os.path.join(self.results_dir, f'error_categories{suffix}.csv')
             category_stats.to_csv(category_csv, index=False)
             
-            logger.info(f"Error analysis CSV saved: {csv_file}")
-            logger.info(f"Error categories CSV saved: {category_csv}")
+            # logger.info(f"Error analysis CSV saved: {csv_file}")  # 파일 저장 로그 제거
+            # logger.info(f"Error categories CSV saved: {category_csv}")  # 파일 저장 로그 제거
         
-        logger.info(f"Error analysis JSON saved: {analysis_file}")
-        logger.info(f"Error categories: {dict(categories)}")
+        # logger.info(f"Error analysis JSON saved: {analysis_file}")  # 파일 저장 로그 제거
+        # logger.info(f"Error categories: {dict(categories)}")  # 불필요한 로그 제거
     
     def plot_metrics(self):
         """메트릭 시각화"""
@@ -457,21 +464,41 @@ class MetricsTracker:
             plt.title('Error Categories')
         
         plt.tight_layout()
-        plot_file = os.path.join(self.log_dir, 'training_metrics.png')
+        # 파일명에 depth와 seed 포함
+        suffix = self._get_file_suffix()
+        plot_file = os.path.join(self.log_dir, f'training_metrics{suffix}.png')
         plt.savefig(plot_file, dpi=300, bbox_inches='tight')
         plt.close()
         
-        logger.info(f"Metrics plot saved: {plot_file}")
+        # logger.info(f"Metrics plot saved: {plot_file}")  # 파일 저장 로그 제거
+    
+    def _get_file_suffix(self):
+        """파일명에 사용할 depth와 seed 접미사 생성"""
+        parts = []
+        if self.depth is not None:
+            parts.append(f'depth-{self.depth}')
+        if self.seed is not None:
+            parts.append(f'seed-{self.seed}')
+        return '_' + '_'.join(parts) if parts else ''
     
     def save_final_results(self):
         """최종 결과를 CSV로 저장"""
-        logger.info("Saving all CSV files...")
+        # logger.info("Saving all CSV files...")  # 불필요한 로그 제거
+        
+        # 리스트를 DataFrame으로 변환 (성능 최적화: 한 번만 변환)
+        if self.metrics_list:
+            self.metrics_df = pd.DataFrame(self.metrics_list)
+        else:
+            self.metrics_df = pd.DataFrame()
+        
+        # 파일명 접미사 생성
+        suffix = self._get_file_suffix()
         
         # 1. 학습 메트릭 CSV 저장
         if not self.metrics_df.empty:
-            csv_file = os.path.join(self.results_dir, 'training_metrics.csv')
+            csv_file = os.path.join(self.results_dir, f'training_metrics{suffix}.csv')
             self.metrics_df.to_csv(csv_file, index=False)
-            logger.info(f"Training metrics CSV saved: {csv_file}")
+            # logger.info(f"Training metrics CSV saved: {csv_file}")  # 파일 저장 로그 제거
             
             # 최종 메트릭 요약
             final_metrics = self.metrics_df.iloc[-1].to_dict() if len(self.metrics_df) > 0 else {}
@@ -491,21 +518,27 @@ class MetricsTracker:
             
             # 요약 통계를 CSV로 저장
             summary_df = pd.DataFrame([training_summary])
-            summary_csv = os.path.join(self.results_dir, 'training_summary.csv')
+            summary_csv = os.path.join(self.results_dir, f'training_summary{suffix}.csv')
             summary_df.to_csv(summary_csv, index=False)
-            logger.info(f"Training summary CSV saved: {summary_csv}")
+            # logger.info(f"Training summary CSV saved: {summary_csv}")  # 파일 저장 로그 제거
         
         # 2. 효율성 메트릭 CSV 저장
-        if not self.efficiency_df.empty:
-            csv_file = os.path.join(self.results_dir, 'efficiency_metrics.csv')
+        if self.efficiency_list:
+            self.efficiency_df = pd.DataFrame(self.efficiency_list)
+            csv_file = os.path.join(self.results_dir, f'efficiency_metrics{suffix}.csv')
             self.efficiency_df.to_csv(csv_file, index=False)
-            logger.info(f"Efficiency metrics CSV saved: {csv_file}")
+            # logger.info(f"Efficiency metrics CSV saved: {csv_file}")  # 파일 저장 로그 제거
+        else:
+            self.efficiency_df = pd.DataFrame()
         
         # 3. 에러 분석 CSV 저장
-        if not self.error_df.empty:
-            csv_file = os.path.join(self.results_dir, 'error_analysis.csv')
+        if self.error_list:
+            self.error_df = pd.DataFrame(self.error_list)
+            csv_file = os.path.join(self.results_dir, f'error_analysis{suffix}.csv')
             self.error_df.to_csv(csv_file, index=False)
-            logger.info(f"Error analysis CSV saved: {csv_file}")
+            # logger.info(f"Error analysis CSV saved: {csv_file}")  # 파일 저장 로그 제거
+        else:
+            self.error_df = pd.DataFrame()
         
         # 4. 최종 효율성 리포트 저장 (JSON + 요약 CSV)
         self.save_efficiency_report()
@@ -732,12 +765,10 @@ def train_epoch(model, dataloader, optimizer, device, epoch, total_epochs, confi
                     backward_losses.append(b_loss.item())
                     total_batch_loss_val += split_loss.item()
                     
-                    # 적극적인 메모리 정리
+                    # 메모리 정리
                     del f_logits, b_logits, split_loss, f_loss, b_loss
                     del f_input, b_input, f_target, b_target, f_mask, b_mask
-                    if torch.cuda.is_available():
-                        torch.cuda.empty_cache()
-                        # synchronize() 제거: 불필요한 동기화 오버헤드 제거로 GPU 활용률 향상
+                    # empty_cache는 자주 호출하지 않음 (성능 향상)
                 
                 # 평균 loss 계산
                 total_batch_loss = torch.tensor(total_batch_loss_val / num_splits, device=device, requires_grad=True)
@@ -768,9 +799,7 @@ def train_epoch(model, dataloader, optimizer, device, epoch, total_epochs, confi
                     total_top5_accuracy += avg_top5_accuracy
                     
                     del f_logits, b_logits, f_input, b_input, f_target, b_target, f_mask, b_mask
-                    if torch.cuda.is_available():
-                        torch.cuda.empty_cache()
-                        # synchronize() 제거: 불필요한 동기화 오버헤드 제거로 GPU 활용률 향상
+                    # empty_cache는 자주 호출하지 않음 (성능 향상)
                 
                 # Backward pass
                 optimizer.zero_grad()
@@ -817,34 +846,39 @@ def train_epoch(model, dataloader, optimizer, device, epoch, total_epochs, confi
                 forward_mask, backward_mask
             )
             
-            # 메트릭 계산
+            # 메트릭 계산 (성능 최적화: 일부 배치에서만 계산)
             if metrics_tracker:
-                # Accuracy 계산
-                forward_acc = metrics_tracker.compute_accuracy(
-                    forward_logits, forward_target, forward_mask
-                )
-                backward_acc = metrics_tracker.compute_accuracy(
-                    backward_logits, backward_target, backward_mask
-                )
-                avg_accuracy = (forward_acc + backward_acc) / 2
+                # Accuracy 계산은 10배치마다만 수행 (성능 향상)
+                if batch_idx % 10 == 0:
+                    forward_acc = metrics_tracker.compute_accuracy(
+                        forward_logits, forward_target, forward_mask
+                    )
+                    backward_acc = metrics_tracker.compute_accuracy(
+                        backward_logits, backward_target, backward_mask
+                    )
+                    avg_accuracy = (forward_acc + backward_acc) / 2
+                    
+                    # Top-5 accuracy 계산
+                    forward_top5 = metrics_tracker.compute_top_k_accuracy(
+                        forward_logits, forward_target, k=5, mask=forward_mask
+                    )
+                    backward_top5 = metrics_tracker.compute_top_k_accuracy(
+                        backward_logits, backward_target, k=5, mask=backward_mask
+                    )
+                    avg_top5_accuracy = (forward_top5 + backward_top5) / 2
+                    
+                    total_accuracy += avg_accuracy
+                    total_top5_accuracy += avg_top5_accuracy
+                    num_accuracy_batches = (batch_idx // 10) + 1
+                else:
+                    # 메트릭 계산을 건너뛴 경우 이전 평균값 사용
+                    num_accuracy_batches = (batch_idx // 10) + 1 if batch_idx >= 10 else 1
                 
-                # Top-5 accuracy 계산
-                forward_top5 = metrics_tracker.compute_top_k_accuracy(
-                    forward_logits, forward_target, k=5, mask=forward_mask
-                )
-                backward_top5 = metrics_tracker.compute_top_k_accuracy(
-                    backward_logits, backward_target, k=5, mask=backward_mask
-                )
-                avg_top5_accuracy = (forward_top5 + backward_top5) / 2
-                
-                total_accuracy += avg_accuracy
-                total_top5_accuracy += avg_top5_accuracy
-                
-                # 에러 분석 (일부 배치에서만)
-                if batch_idx % 100 == 0 and vocab:
+                # 에러 분석 (성능 최적화: 빈도 줄임)
+                if batch_idx % 1000 == 0 and vocab:
                     idx2word = {v: k for k, v in vocab.items()}
                     metrics_tracker.analyze_errors(
-                        forward_logits, forward_target, idx2word, forward_mask, sample_size=10
+                        forward_logits, forward_target, idx2word, forward_mask, sample_size=5
                     )
             
             # Backward pass
@@ -875,8 +909,13 @@ def train_epoch(model, dataloader, optimizer, device, epoch, total_epochs, confi
             
             # 진행률 업데이트 (매 배치마다 업데이트, tqdm이 자동으로 출력 빈도 조절)
             avg_loss = total_loss / num_batches
-            avg_acc = total_accuracy / num_batches if metrics_tracker else 0
-            avg_top5 = total_top5_accuracy / num_batches if metrics_tracker else 0
+            if metrics_tracker:
+                num_accuracy_batches = (batch_idx // 10) + 1 if batch_idx >= 0 else 1
+                avg_acc = total_accuracy / max(num_accuracy_batches, 1) if total_accuracy > 0 else 0
+                avg_top5 = total_top5_accuracy / max(num_accuracy_batches, 1) if total_top5_accuracy > 0 else 0
+            else:
+                avg_acc = 0
+                avg_top5 = 0
             
             # 간결한 출력 형식 (너무 많은 정보로 인한 잘림 방지)
             postfix = {
@@ -893,15 +932,17 @@ def train_epoch(model, dataloader, optimizer, device, epoch, total_epochs, confi
             
             pbar.set_postfix(postfix)
             
-            # 메모리 정리 (더 적극적으로)
+            # 메모리 정리 (성능 최적화: 빈도 줄임)
             del forward_logits, backward_logits, total_batch_loss, forward_loss, backward_loss
-            if metrics_tracker:
-                del forward_acc, backward_acc, avg_accuracy, forward_top5, backward_top5, avg_top5_accuracy
+            if metrics_tracker and batch_idx % 10 == 0:
+                # 메트릭 계산한 경우에만 변수 삭제
+                if 'forward_acc' in locals():
+                    del forward_acc, backward_acc, avg_accuracy, forward_top5, backward_top5, avg_top5_accuracy
             # 입력 텐서도 정리
             del forward_input, backward_input, forward_target, backward_target, forward_mask, backward_mask
-            if torch.cuda.is_available():
+            # empty_cache는 100배치마다만 호출 (성능 향상)
+            if torch.cuda.is_available() and batch_idx % 100 == 0:
                 torch.cuda.empty_cache()
-                # synchronize() 제거: 불필요한 동기화 오버헤드 제거로 GPU 활용률 향상
                 
         except Exception as e:
             logger.error(f"Error in batch {batch_idx}: {str(e)}")
@@ -910,8 +951,15 @@ def train_epoch(model, dataloader, optimizer, device, epoch, total_epochs, confi
     avg_loss = total_loss / max(num_batches, 1)
     avg_forward_loss = total_forward_loss / max(num_batches, 1)
     avg_backward_loss = total_backward_loss / max(num_batches, 1)
-    avg_accuracy = total_accuracy / max(num_batches, 1) if metrics_tracker else 0
-    avg_top5_accuracy = total_top5_accuracy / max(num_batches, 1) if metrics_tracker else 0
+    
+    # Accuracy는 10배치마다만 계산했으므로 올바른 평균 계산
+    if metrics_tracker:
+        num_accuracy_batches = max(1, (num_batches - 1) // 10 + 1) if num_batches > 0 else 1
+        avg_accuracy = total_accuracy / max(num_accuracy_batches, 1) if total_accuracy > 0 else 0
+        avg_top5_accuracy = total_top5_accuracy / max(num_accuracy_batches, 1) if total_top5_accuracy > 0 else 0
+    else:
+        avg_accuracy = 0
+        avg_top5_accuracy = 0
     
     return {
         'total_loss': avg_loss,
@@ -945,14 +993,13 @@ def main():
     # 설정 로드
     config_path = os.path.join(ROOT_DIR, args.config)
     config = load_config(config_path)
-    logger.info(f"Loaded config: {config}")
+    # logger.info(f"Loaded config: {config}")  # 상세 설정은 로그 파일에 저장되므로 제거
     
     # 시드 설정
     set_seed(config['seed'])
     
     # 디바이스 설정
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    logger.info(f"Using device: {device}")
     
     if torch.cuda.is_available():
         # GPU 최적화 설정 (CUDA_LAUNCH_BLOCKING 제거로 비동기 실행 활성화)
@@ -963,14 +1010,13 @@ def main():
         os.environ['PYTORCH_ALLOC_CONF'] = 'expandable_segments:True'
         torch.cuda.empty_cache()
         
-        logger.info(f"GPU: {torch.cuda.get_device_name()}")
-        logger.info(f"GPU Memory: {torch.cuda.get_device_properties(0).total_memory / 1024**3:.1f} GB")
-        logger.info("GPU 비동기 실행 모드 활성화 (성능 최적화)")
+        # GPU 정보는 간단히만 로깅
+        logger.info(f"GPU: {torch.cuda.get_device_name()} ({torch.cuda.get_device_properties(0).total_memory / 1024**3:.1f}GB)")
         
-        # 배치 크기 권장 사항
+        # 배치 크기 권장 사항 (경고만)
         batch_size = config.get('batch_size', 16)
         if batch_size < 32:
-            logger.warning(f"⚠️  배치 크기({batch_size})가 작습니다. GPU 활용률을 높이려면 batch_size를 32 이상으로 늘리는 것을 권장합니다.")
+            logger.warning(f"배치 크기({batch_size})가 작습니다. GPU 활용률 향상을 위해 32 이상 권장")
     
     # 어휘 사전 로드
     vocab_path = os.path.join(ROOT_DIR, args.vocab_path)
@@ -1001,30 +1047,34 @@ def main():
         word2idx = limited_word2idx
         config['vocab_size'] = max_vocab_size
         
-        logger.info(f"Limited vocab contains {len(word2idx):,} words")
-        logger.info(f"UNK token available: {'<UNK>' in word2idx}")
+        # logger.info(f"Limited vocab contains {len(word2idx):,} words")  # 불필요한 로그 제거
+        # logger.info(f"UNK token available: {'<UNK>' in word2idx}")  # 불필요한 로그 제거
     else:
         config['vocab_size'] = original_vocab_size
     
-    logger.info(f"Using vocab_size: {config['vocab_size']:,}")
+    # logger.info(f"Using vocab_size: {config['vocab_size']:,}")  # 불필요한 로그 제거
     
     # 모델 생성
-    logger.info("Creating ELMo BiLM model...")
+    # logger.info("Creating ELMo BiLM model...")  # 불필요한 로그 제거
     model = create_elmo_model(config)
     
     # 옵티마이저 설정
     optimizer = optim.Adam(model.parameters(), lr=config['lr'])
     
+    # depth와 seed 정보 추출 (num_layers 또는 depth 사용)
+    depth = config.get('depth') or config.get('num_layers')
+    seed = config.get('seed')
+    
     # 체크포인트 디렉토리 생성
     checkpoint_dir = os.path.join(ROOT_DIR, args.checkpoint_dir)
     os.makedirs(checkpoint_dir, exist_ok=True)
-    logger.info(f"Checkpoints will be saved to: {checkpoint_dir}")
+    # logger.info(f"Checkpoints will be saved to: {checkpoint_dir}")  # 불필요한 로그 제거
     
-    # 메트릭 추적기 생성
-    run_name = f"run_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+    # 메트릭 추적기 생성 (depth와 seed 포함)
+    run_name = f"run_depth-{depth}_seed-{seed}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
     log_dir = os.path.join(ROOT_DIR, LOGS_DIR, run_name)
-    results_dir = os.path.join(ROOT_DIR, RESULTS_DIR, 'metrics')
-    metrics_tracker = MetricsTracker(log_dir, results_dir)
+    results_dir = os.path.join(ROOT_DIR, RESULTS_DIR, f'metrics_depth-{depth}_seed-{seed}')
+    metrics_tracker = MetricsTracker(log_dir, results_dir, depth=depth, seed=seed)
     
     # 체크포인트 로드 (resume인 경우)
     start_epoch = 0
@@ -1036,23 +1086,18 @@ def main():
     
     # 데이터 로더 생성
     data_path = os.path.join(ROOT_DIR, args.data_path)
-    logger.info("Creating data loader...")
     
     try:
         dataloader = get_dataloader(data_path, config, word2idx)
-        logger.info(f"Data loader created successfully")
     except Exception as e:
         logger.error(f"Failed to create data loader: {str(e)}")
-        logger.info("Please check if the data file exists and run preprocessing if needed")
         return
     
     # 학습 시작
     logger.info("Starting training...")
-    logger.info(f"Config: {config}")
-    logger.info(f"Metrics will be saved to: {log_dir}")
     
-    # 설정 저장
-    config_file = os.path.join(log_dir, 'config.json')
+    # 설정 저장 (depth와 seed 포함)
+    config_file = os.path.join(log_dir, f'config_depth-{depth}_seed-{seed}.json')
     with open(config_file, 'w') as f:
         json.dump(config, f, indent=2)
     
@@ -1072,18 +1117,14 @@ def main():
         # 메트릭 로깅
         metrics_tracker.log_metrics(epoch, epoch_metrics)
         
-        # 로그 출력
-        logger.info(f"Epoch {epoch+1}/{config['epochs']} completed in {epoch_time:.2f}s")
-        logger.info(f"Average Loss: {epoch_metrics['total_loss']:.4f}")
-        logger.info(f"Forward Loss: {epoch_metrics['forward_loss']:.4f}")
-        logger.info(f"Backward Loss: {epoch_metrics['backward_loss']:.4f}")
-        logger.info(f"Accuracy: {epoch_metrics['accuracy']:.4f}")
-        logger.info(f"Top-5 Accuracy: {epoch_metrics['top5_accuracy']:.4f}")
-        logger.info(f"Perplexity: {epoch_metrics['perplexity']:.2f}")
-        logger.info(f"GPU Memory: {epoch_metrics['gpu_memory_peak']:.2f}GB")
+        # 로그 출력 (간소화)
+        logger.info(f"Epoch {epoch+1}/{config['epochs']} | Loss: {epoch_metrics['total_loss']:.4f} | "
+                   f"Acc: {epoch_metrics['accuracy']:.4f} | PPL: {epoch_metrics['perplexity']:.2f} | "
+                   f"Time: {epoch_time:.1f}s")
         
-        # 체크포인트 저장
-        checkpoint_path = os.path.join(checkpoint_dir, f'elmo_bilm_epoch_{epoch+1}.pt')
+        # 체크포인트 저장 (depth와 seed 포함)
+        checkpoint_path = os.path.join(checkpoint_dir, 
+                                      f'elmo_bilm_epoch_{epoch+1}_depth-{depth}_seed-{seed}.pt')
         save_checkpoint(model, optimizer, epoch+1, epoch_metrics['total_loss'], 
                        checkpoint_path, epoch_metrics, config)
         
@@ -1092,7 +1133,7 @@ def main():
             torch.cuda.empty_cache()
     
     # 최종 분석 및 리포트 생성
-    logger.info("Generating final reports...")
+    # logger.info("Generating final reports...")  # 불필요한 로그 제거
     metrics_tracker.save_final_results()
     metrics_tracker.plot_metrics()
     
@@ -1105,12 +1146,12 @@ def main():
         'gpu_info': metrics_tracker.gpu_info if metrics_tracker.gpu_available else None
     }
     
-    summary_file = os.path.join(log_dir, 'training_summary.json')
+    # 파일명에 depth와 seed 포함
+    summary_file = os.path.join(log_dir, f'training_summary_depth-{depth}_seed-{seed}.json')
     with open(summary_file, 'w') as f:
         json.dump(final_summary, f, indent=2)
     
-    logger.info("Training completed!")
-    logger.info(f"Best loss: {best_loss:.4f}")
+    logger.info(f"Training completed! Best loss: {best_loss:.4f}")
 
 
 if __name__ == '__main__':

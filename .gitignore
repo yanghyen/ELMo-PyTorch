@@ -63,12 +63,15 @@ Desktop.ini
 *.txt
 *.pkl
 *.pth
+*.pt
+*.h
 
 word_similarity/
 pretrain/
 results/
 eval/
 logs/
+/.conda
 
 original_paper_error_analysis.py
 create_summary_report.py

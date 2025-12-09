@@ -3822,3 +3822,100 @@ Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.
 2025-12-08 18:24:05,953 - INFO - Config: {'vocab_size': 50000, 'embedding_dim': 256, 'hidden_dim': 512, 'projection_dim': 128, 'dropout': 0.1, 'seq_len': 128, 'batch_size': 32, 'lr': 0.001, 'epochs': 1, 'seed': 42, 'num_workers': 6, 'num_layers': 1}
 2025-12-08 18:24:05,953 - INFO - Metrics will be saved to: /home/ssai/Workspace/ELMo_repo/logs/run_20251208_182405
 2025-12-08 18:24:05,953 - INFO - ⚠️ IterableDataset has no definite length. Using estimated batches: 24,414
+2025-12-09 12:47:46,716 - INFO - Epoch 1/1 completed in 66220.76s
+2025-12-09 12:47:46,716 - INFO - Average Loss: 0.4796
+2025-12-09 12:47:46,716 - INFO - Forward Loss: 0.4796
+2025-12-09 12:47:46,716 - INFO - Backward Loss: 0.4797
+2025-12-09 12:47:46,716 - INFO - Accuracy: 0.8800
+2025-12-09 12:47:46,716 - INFO - Top-5 Accuracy: 0.9939
+2025-12-09 12:47:46,716 - INFO - Perplexity: 1.62
+2025-12-09 12:47:46,716 - INFO - GPU Memory: 0.47GB
+2025-12-09 12:47:47,022 - INFO - Checkpoint saved: /home/ssai/Workspace/ELMo_repo/runs/checkpoints/depth-1/elmo_bilm_epoch_1.pt
+2025-12-09 12:47:47,022 - INFO - Generating final reports...
+2025-12-09 12:47:47,022 - INFO - Saving all CSV files...
+2025-12-09 12:47:47,026 - INFO - Training metrics CSV saved: /home/ssai/Workspace/ELMo_repo/results/metrics/training_metrics.csv
+2025-12-09 12:47:47,028 - INFO - Training summary CSV saved: /home/ssai/Workspace/ELMo_repo/results/metrics/training_summary.csv
+2025-12-09 12:47:49,367 - INFO - Efficiency metrics CSV saved: /home/ssai/Workspace/ELMo_repo/results/metrics/efficiency_metrics.csv
+2025-12-09 12:47:49,417 - INFO - Error analysis CSV saved: /home/ssai/Workspace/ELMo_repo/results/metrics/error_analysis.csv
+2025-12-09 12:47:51,872 - INFO - Efficiency report saved: /home/ssai/Workspace/ELMo_repo/logs/run_20251208_182405/efficiency_report.json
+2025-12-09 12:47:51,872 - INFO - Efficiency CSV saved: /home/ssai/Workspace/ELMo_repo/results/metrics/efficiency_metrics.csv
+2025-12-09 12:47:51,872 - INFO - Efficiency summary saved: /home/ssai/Workspace/ELMo_repo/results/metrics/efficiency_summary.csv
+2025-12-09 12:47:51,933 - INFO - Error analysis CSV saved: /home/ssai/Workspace/ELMo_repo/results/metrics/error_analysis.csv
+2025-12-09 12:47:51,933 - INFO - Error categories CSV saved: /home/ssai/Workspace/ELMo_repo/results/metrics/error_categories.csv
+2025-12-09 12:47:51,933 - INFO - Error analysis JSON saved: /home/ssai/Workspace/ELMo_repo/logs/run_20251208_182405/error_analysis.json
+2025-12-09 12:47:51,933 - INFO - Error categories: {'OOV': 47715, 'short_words': 407, 'other': 8}
+2025-12-09 12:47:53,199 - INFO - Metrics plot saved: /home/ssai/Workspace/ELMo_repo/logs/run_20251208_182405/training_metrics.png
+2025-12-09 12:47:53,200 - INFO - Training completed!
+2025-12-09 12:47:53,200 - INFO - Best loss: inf
+2025-12-09 16:34:34,018 - INFO - Loaded config: {'vocab_size': 50000, 'embedding_dim': 256, 'hidden_dim': 512, 'projection_dim': 128, 'dropout': 0.1, 'seq_len': 128, 'batch_size': 32, 'lr': 0.001, 'epochs': 1, 'seed': 42, 'num_workers': 6, 'num_layers': 2}
+2025-12-09 16:34:34,119 - INFO - Using device: cuda
+2025-12-09 16:34:34,135 - INFO - GPU: NVIDIA GeForce RTX 4090
+2025-12-09 16:34:34,135 - INFO - GPU Memory: 23.5 GB
+2025-12-09 16:34:34,135 - INFO - GPU 비동기 실행 모드 활성화 (성능 최적화)
+2025-12-09 16:34:36,175 - INFO - Loaded vocabulary: 3,580,963 words
+2025-12-09 16:34:36,279 - WARNING - Limiting vocab from 3,580,963 to 50,000 for memory efficiency
+2025-12-09 16:34:36,409 - INFO - Limited vocab contains 50,000 words
+2025-12-09 16:34:36,409 - INFO - UNK token available: True
+2025-12-09 16:34:36,409 - INFO - Using vocab_size: 50,000
+2025-12-09 16:34:36,409 - INFO - Creating ELMo BiLM model...
+2025-12-09 16:34:37,341 - INFO - Checkpoints will be saved to: /home/ssai/Workspace/ELMo_repo/runs/checkpoints/depth-2/
+2025-12-09 16:34:37,342 - INFO - Creating data loader...
+2025-12-09 16:34:37,344 - INFO - Data loader created successfully
+2025-12-09 16:34:37,344 - INFO - Starting training...
+2025-12-09 16:34:37,344 - INFO - Config: {'vocab_size': 50000, 'embedding_dim': 256, 'hidden_dim': 512, 'projection_dim': 128, 'dropout': 0.1, 'seq_len': 128, 'batch_size': 32, 'lr': 0.001, 'epochs': 1, 'seed': 42, 'num_workers': 6, 'num_layers': 2}
+2025-12-09 16:34:37,344 - INFO - Metrics will be saved to: /home/ssai/Workspace/ELMo_repo/logs/run_20251209_163437
+2025-12-09 16:34:37,345 - INFO - ⚠️ IterableDataset has no definite length. Using estimated batches: 24,414
+2025-12-09 16:43:39,761 - INFO - Loaded config: {'vocab_size': 50000, 'embedding_dim': 256, 'hidden_dim': 512, 'projection_dim': 128, 'dropout': 0.1, 'seq_len': 128, 'batch_size': 32, 'lr': 0.001, 'epochs': 1, 'seed': 42, 'num_workers': 6, 'num_layers': 2}
+2025-12-09 16:43:39,881 - INFO - Using device: cuda
+2025-12-09 16:43:39,899 - INFO - GPU: NVIDIA GeForce RTX 4090
+2025-12-09 16:43:39,899 - INFO - GPU Memory: 23.5 GB
+2025-12-09 16:43:39,899 - INFO - GPU 비동기 실행 모드 활성화 (성능 최적화)
+2025-12-09 16:43:41,938 - INFO - Loaded vocabulary: 3,580,963 words
+2025-12-09 16:43:42,043 - WARNING - Limiting vocab from 3,580,963 to 50,000 for memory efficiency
+2025-12-09 16:43:42,173 - INFO - Limited vocab contains 50,000 words
+2025-12-09 16:43:42,173 - INFO - UNK token available: True
+2025-12-09 16:43:42,173 - INFO - Using vocab_size: 50,000
+2025-12-09 16:43:42,173 - INFO - Creating ELMo BiLM model...
+2025-12-09 16:43:43,092 - INFO - Checkpoints will be saved to: /home/ssai/Workspace/ELMo_repo/runs/checkpoints/depth-2/
+2025-12-09 16:43:43,092 - INFO - Creating data loader...
+2025-12-09 16:43:43,094 - INFO - Data loader created successfully
+2025-12-09 16:43:43,094 - INFO - Starting training...
+2025-12-09 16:43:43,094 - INFO - Config: {'vocab_size': 50000, 'embedding_dim': 256, 'hidden_dim': 512, 'projection_dim': 128, 'dropout': 0.1, 'seq_len': 128, 'batch_size': 32, 'lr': 0.001, 'epochs': 1, 'seed': 42, 'num_workers': 6, 'num_layers': 2}
+2025-12-09 16:43:43,094 - INFO - Metrics will be saved to: /home/ssai/Workspace/ELMo_repo/logs/run_20251209_164343
+2025-12-09 16:43:43,095 - INFO - ⚠️ IterableDataset has no definite length. Using estimated batches: 24,414
+2025-12-09 16:59:25,894 - INFO - Loaded config: {'vocab_size': 50000, 'embedding_dim': 256, 'hidden_dim': 512, 'projection_dim': 128, 'dropout': 0.1, 'seq_len': 128, 'batch_size': 32, 'lr': 0.001, 'epochs': 1, 'seed': 42, 'num_workers': 12, 'num_layers': 2}
+2025-12-09 16:59:25,944 - INFO - Using device: cuda
+2025-12-09 16:59:25,960 - INFO - GPU: NVIDIA GeForce RTX 4090
+2025-12-09 16:59:25,960 - INFO - GPU Memory: 23.5 GB
+2025-12-09 16:59:25,960 - INFO - GPU 비동기 실행 모드 활성화 (성능 최적화)
+2025-12-09 16:59:27,990 - INFO - Loaded vocabulary: 3,580,963 words
+2025-12-09 16:59:28,094 - WARNING - Limiting vocab from 3,580,963 to 50,000 for memory efficiency
+2025-12-09 16:59:28,225 - INFO - Limited vocab contains 50,000 words
+2025-12-09 16:59:28,225 - INFO - UNK token available: True
+2025-12-09 16:59:28,225 - INFO - Using vocab_size: 50,000
+2025-12-09 16:59:28,225 - INFO - Creating ELMo BiLM model...
+2025-12-09 16:59:29,240 - INFO - Checkpoints will be saved to: /home/ssai/Workspace/ELMo_repo/runs/checkpoints/depth-2/
+2025-12-09 16:59:29,240 - INFO - Creating data loader...
+2025-12-09 16:59:29,243 - INFO - Data loader created successfully
+2025-12-09 16:59:29,243 - INFO - Starting training...
+2025-12-09 16:59:29,243 - INFO - Config: {'vocab_size': 50000, 'embedding_dim': 256, 'hidden_dim': 512, 'projection_dim': 128, 'dropout': 0.1, 'seq_len': 128, 'batch_size': 32, 'lr': 0.001, 'epochs': 1, 'seed': 42, 'num_workers': 12, 'num_layers': 2}
+2025-12-09 16:59:29,243 - INFO - Metrics will be saved to: /home/ssai/Workspace/ELMo_repo/logs/run_20251209_165929
+2025-12-09 16:59:29,244 - INFO - ⚠️ IterableDataset has no definite length. Using estimated batches: 24,414
+2025-12-09 17:05:23,631 - INFO - GPU: NVIDIA GeForce RTX 4090 (23.5GB)
+2025-12-09 17:05:25,850 - WARNING - Limiting vocab from 3,580,963 to 50,000 for memory efficiency
+2025-12-09 17:05:26,901 - INFO - Starting training...
+2025-12-09 17:05:26,902 - INFO - ⚠️ IterableDataset has no definite length. Using estimated batches: 24,414
+2025-12-09 17:09:40,560 - INFO - GPU: NVIDIA GeForce RTX 4090 (23.5GB)
+2025-12-09 17:09:42,960 - WARNING - Limiting vocab from 3,580,963 to 50,000 for memory efficiency
+2025-12-09 17:09:44,023 - INFO - DataLoader: num_workers=16, batch_size=32, prefetch_factor=8
+2025-12-09 17:09:44,024 - INFO - Starting training...
+2025-12-09 17:09:44,024 - INFO - ⚠️ IterableDataset has no definite length. Using estimated batches: 24,414
+2025-12-09 17:10:16,827 - INFO - GPU: NVIDIA GeForce RTX 4090 (23.5GB)
+2025-12-09 17:10:18,974 - WARNING - Limiting vocab from 3,580,963 to 50,000 for memory efficiency
+2025-12-09 17:10:20,054 - INFO - DataLoader: num_workers=16, batch_size=32, prefetch_factor=8
+2025-12-09 17:10:20,055 - INFO - Starting training...
+2025-12-09 17:10:20,055 - INFO - ⚠️ IterableDataset has no definite length. Using estimated batches: 24,414
+2025-12-09 17:13:33,265 - INFO - GPU: NVIDIA GeForce RTX 4090 (23.5GB)
+2025-12-09 17:13:35,480 - WARNING - Limiting vocab from 3,580,963 to 50,000 for memory efficiency
+2025-12-09 17:13:36,631 - INFO - Starting training...
+2025-12-09 17:13:36,631 - INFO - ⚠️ IterableDataset has no definite length. Using estimated batches: 24,414

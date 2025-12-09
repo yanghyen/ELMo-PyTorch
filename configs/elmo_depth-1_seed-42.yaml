@@ -8,5 +8,5 @@ batch_size: 32            # GPU 활용률 향상을 위해 16 -> 32로 증가
 lr: 0.001
 epochs: 1
 seed: 42
-num_workers: 6            # CPU 활용률 향상을 위해 4 -> 6으로 증가
+num_workers: 12            # CPU 활용률 향상을 위해 4 -> 6으로 증가
 num_layers: 1
