@@ -672,13 +672,22 @@ def train_epoch(model, dataloader, optimizer, device, epoch, total_epochs, confi
     try:
         total_batches = len(dataloader)
     except TypeError:
-        # IterableDataset의 경우 예상 배치 수 사용
-        # seq_len=64, batch_size=16 기준으로 대략적인 추정
-        estimated_tokens = config.get('estimated_tokens', 100000000)  # 기본값 100M 토큰
+        # IterableDataset의 경우 실제 토큰 수를 사용하여 배치 수 계산
         seq_len = config.get('seq_len', 64)
         batch_size = config.get('batch_size', 16)
-        total_batches = estimated_tokens // (seq_len * batch_size)
-        logger.info(f"⚠️ IterableDataset has no definite length. Using estimated batches: {total_batches:,}")
+        
+        # 데이터셋에서 실제 토큰 수 가져오기
+        if hasattr(dataloader.dataset, 'total_tokens'):
+            total_tokens = dataloader.dataset.total_tokens
+            # 각 시퀀스는 seq_len만큼 이동하므로, 시퀀스 수 = total_tokens / seq_len
+            # 배치 수 = 시퀀스 수 / batch_size
+            total_batches = (total_tokens // seq_len) // batch_size
+            logger.info(f"⚠️ IterableDataset has no definite length. Using actual tokens ({total_tokens:,}) to estimate batches: {total_batches:,}")
+        else:
+            # 폴백: config의 estimated_tokens 사용
+            estimated_tokens = config.get('estimated_tokens', 100000000)  # 기본값 100M 토큰
+            total_batches = estimated_tokens // (seq_len * batch_size)
+            logger.info(f"⚠️ IterableDataset has no definite length. Using estimated tokens ({estimated_tokens:,}) to estimate batches: {total_batches:,}")
     
     pbar = tqdm(
         dataloader,
@@ -1029,7 +1038,8 @@ def main():
     
     # vocab_size 제한 (메모리 절약)
     original_vocab_size = len(word2idx)
-    max_vocab_size = 50000  # 최대 50K 단어로 제한
+    # 설정 파일의 vocab_size를 사용하거나, 없으면 기본값 50K 사용
+    max_vocab_size = config.get('vocab_size', 50000)
     
     if original_vocab_size > max_vocab_size:
         logger.warning(f"Limiting vocab from {original_vocab_size:,} to {max_vocab_size:,} for memory efficiency")

@@ -1,12 +1,12 @@
-vocab_size: 50000          # 메모리 절약을 위해 상위 50K 단어만 사용
+vocab_size: 50000           # 속도 최적화를 위해 50K 단어 사용 (100K는 3배 느림)
 embedding_dim: 256         # 512 -> 256로 축소
 hidden_dim: 512           # 1024 -> 512로 축소
 projection_dim: 128       # 256 -> 128로 축소
 dropout: 0.1
 seq_len: 128              # GPU 활용률 향상을 위해 64 -> 128로 증가
-batch_size: 32            # GPU 활용률 향상을 위해 16 -> 32로 증가
+batch_size: 64            # GPU 활용률 향상을 위해 16 -> 32로 증가
 lr: 0.001
-epochs: 1
+epochs: 5
 seed: 42
-num_workers: 16           # CPU 활용률 향상을 위해 4 -> 6으로 증가
+num_workers: 16       # CPU 활용률 향상을 위해 4 -> 6으로 증가
 num_layers: 2
