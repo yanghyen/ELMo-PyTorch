@@ -225,21 +225,37 @@ pytest tests
 pip install pytest
 ```
 
-## README에 추가하면 좋은 내용
+## 실험 결과 확인
 
-현재 README에는 실행 흐름을 중심으로 정리했습니다. 프로젝트 제출용 또는 재현성을
-높이려면 아래 내용도 추가하는 것이 좋습니다.
+Downstream 실험 스크립트는 실행 결과를 각 태스크 디렉토리의 CSV 파일로
+저장합니다. 같은 실험을 여러 번 실행하면 seed, timestamp, metric이 누적 기록되어
+baseline과 ELMo 모델을 비교할 수 있습니다.
 
-- 실험 환경: GPU 모델, CUDA 버전, Python/PyTorch 버전
-- 데이터셋 버전과 split 크기
-- 학습 완료 checkpoint 파일명과 다운로드/공유 위치
-- 각 downstream 태스크의 최종 성능 표
-- baseline 대비 ELMo 성능 차이 분석
-- ablation 결과 해석
-- 알려진 제한사항
-  - 사전학습 비용이 큼
-  - 일부 downstream 데이터는 실행 시 다운로드가 필요함
-  - GloVe 캐시 파일이 없으면 첫 실행 시간이 길 수 있음
+대표적인 결과 파일은 다음과 같습니다.
+
+```text
+downstream/NER/baseline_eval_metrics.csv
+downstream/SST_2/*_metrics.csv
+downstream/SST_5/*_metrics.csv
+downstream/SQuAD/*_metrics.csv
+downstream/SNLI/*_metrics.csv
+downstream/SRL/*_metrics.csv
+```
+
+ELMo 효과를 확인할 때는 같은 데이터 split과 같은 seed에서 baseline 결과와 ELMo
+결과를 비교합니다. SQuAD에는 ELMo layer 선택과 input/output 삽입 위치를 비교하는
+ablation 스크립트도 포함되어 있습니다.
+
+## 재현 참고사항
+
+- 사전학습은 계산 비용이 크므로 GPU 환경에서 실행하는 것을 권장합니다.
+- 일부 downstream 스크립트는 첫 실행 시 데이터셋이나 GloVe 파일을 다운로드합니다.
+- ELMo 기반 downstream 실험은 `checkpoints/bilm/final_model.pt`와
+  `bilm/data/pretrain/elmo/vocab.txt`가 준비되어 있어야 합니다.
+- 데이터셋 다운로드 경로와 캐시 파일은 각 downstream 디렉토리 아래에 생성될 수
+  있습니다.
+- 실험 환경에 따라 batch size, max steps, learning rate는 `config.yaml` 또는 각
+  스크립트의 CLI 인자로 조정할 수 있습니다.
 
 ## Citation
 
