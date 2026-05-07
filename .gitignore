@@ -7,3 +7,18 @@ build/
 *.swp
 
 
+*.pt
+*.csv
+*.zip
+.DS_Store
+Icon?
+bilm/data/
+__pycache__/
+downstream/SST_2/SST-2/
+downstream/SST_5/SST-5/
+downstream/SNLI/snli_1.0/
+downstream/SNLI/__MACOSX/
+downstream/SQuAD/.glove_cache/
+Dockerfile
+.cursor/
+.pytest_cache/

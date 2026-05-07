@@ -1,0 +1,71 @@
+{
+  "bidirectional": true,
+  "char_cnn": {
+    "activation": "relu",
+    "embedding": {
+      "dim": 16
+    },
+    "filters": [
+      [
+        1,
+        32
+      ],
+      [
+        2,
+        32
+      ],
+      [
+        3,
+        64
+      ],
+      [
+        4,
+        128
+      ],
+      [
+        5,
+        256
+      ],
+      [
+        6,
+        512
+      ],
+      [
+        7,
+        1024
+      ]
+    ],
+    "max_characters_per_token": 50,
+    "n_characters": 261,
+    "n_highway": 2,
+    "projection": {
+      "dim": 512
+    }
+  },
+  "dropout": 0.1,
+  "lstm": {
+    "cell_clip": 3.0,
+    "dim": 1024,
+    "n_layers": 2,
+    "proj_clip": 3.0,
+    "projection_dim": 512,
+    "use_skip_connections": true
+  },
+  "all_clip_norm_val": 10.0,
+  "clip_grad_norm": 5.0,
+  "n_tokens_vocab": 50000,
+  "batch_size": 128,
+  "unroll_steps": 40,
+  "n_negative_samples_batch": 8192,
+  "learning_rate": 0.0005,
+  "lr_decay_steps": 1,
+  "lr_decay_rate": 0.9,
+  "steps_per_epoch": 1000,
+  "n_epochs": 10,
+  "max_steps": 500000,
+  "save_every_steps": 50000,
+  "log_every_steps": 1000,
+  "lr_scheduler_step_interval": 50000,
+  "validation_every_steps": 5000,
+  "eval_max_batches": 50
+}

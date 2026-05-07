@@ -62,6 +62,9 @@ class Vocabulary(object):
     @property
     def size(self):
         return len(self._id_to_word)
+    
+    def __len__(self):
+        return len(self._id_to_word)
 
     def word_to_id(self, word):
         if word in self._word_to_id:
@@ -320,7 +323,7 @@ class LMDataset(object):
         per line.  Each sentence is pre-tokenized and white space joined.
     """
     def __init__(self, filepattern, vocab, reverse=False, test=False,
-                 shuffle_on_load=False):
+                 shuffle_on_load=True):
         '''
         filepattern = a glob string that specifies the list of files.
         vocab = an instance of Vocabulary or UnicodeCharsVocabulary

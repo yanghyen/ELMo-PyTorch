@@ -1,0 +1,56 @@
+# BiLM 사전학습 설정 (train_elmo.py --config config.yaml)
+
+data:
+  # 전처리 산출물 위치(bilm/에서 OUTPUT_DIR=data/pretrain/elmo 로 돌린 경우)
+  train_prefix: "bilm/data/pretrain/elmo/train/train_*.txt"
+  vocab_file: "bilm/data/pretrain/elmo/vocab.txt"
+  test_prefix: null
+  valid_prefix: "bilm/data/pretrain/elmo/valid/valid_*.txt"
+  save_dir: "checkpoints/bilm"
+
+model:
+  use_character_inputs: true
+  max_word_length: 50
+  char_cnn:
+    activation: relu
+    embedding_dim: 16
+    filters:
+      - [1, 32]
+      - [2, 32]
+      - [3, 64]
+      - [4, 128]
+      - [5, 256]
+      - [6, 512]
+      - [7, 1024]
+    n_characters: 261
+    n_highway: 2
+    projection_dim: 512
+  lstm:
+    dim: 1024
+    n_layers: 2
+    projection_dim: 512
+    cell_clip: 3
+    proj_clip: 3
+    use_skip_connections: true
+
+training:
+  batch_size: 128
+  num_steps: 40
+  max_steps: 500000
+  dropout: 0.1
+  learning_rate: 0.0005
+  clip_grad_norm: 5.0
+  all_clip_norm_val: 10.0
+  n_negative_samples_batch: 8192
+  save_every_steps: 50000
+  # null이면 save_every_steps마다 검증 (0이면 검증 비활성)
+  validation_every_steps: 5000
+  eval_max_batches: 50
+  log_every_steps: 1000
+  # StepLR: 한 번 .step() 호출마다 lr *= lr_decay_rate (train_max_steps에서는 interval마다 호출)
+  lr_decay_steps: 1
+  lr_scheduler_step_interval: 50000
+  lr_decay_rate: 0.9
+  # max_steps 미사용 시 에폭 학습용 (train_elmo max_steps=null)
+  n_epochs: 10
+  steps_per_epoch: 1000
